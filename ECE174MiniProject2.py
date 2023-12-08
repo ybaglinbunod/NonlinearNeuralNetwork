@@ -285,34 +285,20 @@ def initializeData(N=500, Gamma=1):
     return x, y
 
 
-import numpy as np
 
-def ablation_study(inputs, outputs, param_ranges, eval_function, iterations=500):
-    """
-    Conducts an ablation study on the levenMarqAlg model with specified hyperparameters.
-    
-    Parameters:
-        inputs: Input data for the model.
-        outputs: Output data for the model.
-        param_ranges: A dictionary with hyperparameters and their ranges.
-        eval_function: A function that evaluates the model's performance.
-        iterations: Number of iterations for the levenMarqAlg model (default 500).
-        
-    Returns:
-        A dictionary with hyperparameter combinations and their corresponding performance.
-    """
+
+def ablation_study(inputs, outputs, param_ranges, iterations=500):
     results = {}
     for lam in param_ranges['lam']:
         for alpha in param_ranges['alpha']:
             for beta in param_ranges['beta']:
-                for w in param_ranges['w']:
-                    # Run the levenMarqAlg model with the current set of hyperparameters
-                    final_weight,loss = levenMarqAlg(w, inputs, outputs, iterations, lam, alpha, beta)
-                    # Evaluate the model
+                for w_index, w in enumerate(param_ranges['w']):
+                    final_weight, loss = levenMarqAlg(w, inputs, outputs, iterations, lam, alpha, beta)
                     performance = loss
-                    # Record the performance
-                    params = (lam, alpha, beta, w)
+                    # Use a simple identifier like w_index instead of the array itself
+                    params = (lam, alpha, beta, w_index)  
                     results[params] = performance
+                    print("x",end=' ')
     return results
 
 # Example usage
@@ -326,10 +312,6 @@ param_ranges = {
           np.random.normal(0, 2, (16, 1)), np.random.normal(0, 3, (16, 1)),
           np.random.normal(5, .1, (16, 1))]  # Replace with actual initial weights
 }
-
-def your_eval_function(inputs, outputs, final_w):
-    # Define how you evaluate the model. For example, calculate and return the error.
-    pass
 
 trainX, trainY = initializeData()
 # Example call
