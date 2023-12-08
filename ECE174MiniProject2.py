@@ -300,7 +300,7 @@ def ablation_study(inputs, outputs, param_ranges, iterations=500):
                     results[params] = performance
                     print("x",end=' ')
     return results
-
+ 
 # Example usage
 param_ranges = {
     'lam': np.array([1 * (10 ** -i) for i in range(10)]),
