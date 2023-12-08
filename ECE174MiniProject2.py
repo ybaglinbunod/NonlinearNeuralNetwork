@@ -270,13 +270,8 @@ def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e-3, alpha=0.9, 
             current_weights = weights_update
         else:
             lam = beta * lam
-
-        loss.append(calc_loss(current_error, current_weights, lam))
-
-        if i % 2500 == 0:
-            print(i, end=' ')
     
-    print("final lambda value:", lam)
+    loss.append(calc_loss(current_error, current_weights, lam))
     return current_weights, loss
 
 
@@ -312,9 +307,9 @@ def ablation_study(inputs, outputs, param_ranges, eval_function, iterations=500)
             for beta in param_ranges['beta']:
                 for w in param_ranges['w']:
                     # Run the levenMarqAlg model with the current set of hyperparameters
-                    final_weight = levenMarqAlg(w, inputs, outputs, iterations, lam, alpha, beta)
+                    final_weight,loss = levenMarqAlg(w, inputs, outputs, iterations, lam, alpha, beta)
                     # Evaluate the model
-                    performance = eval_function(inputs, outputs, final_weight)
+                    performance = loss
                     # Record the performance
                     params = (lam, alpha, beta, w)
                     results[params] = performance
@@ -322,30 +317,32 @@ def ablation_study(inputs, outputs, param_ranges, eval_function, iterations=500)
 
 # Example usage
 param_ranges = {
-    'lam': [1e-3, 1e-2, 1e-1],
-    'alpha': [0.8, 0.9, 1.0],
-    'beta': [1.0, 1.1, 1.2],
-    'w': [np.array([initial values]), ...]  # Replace with actual initial weights
+    'lam': np.array([1 * (10 ** -i) for i in range(10)]),
+    'alpha': np.array([ 0.1*i for i in range(1,10)]),
+    'beta': np.array([ 1.1+ 0.5*i for i in range(10)]),
+    'w': [np.ones((16,1)), np.zeros((16,1)), np.random.normal(0, .1, (16, 1)), 
+          np.random.normal(0, .05, (16, 1)), np.random.normal(0, .2, (16, 1)),
+          np.random.normal(0, .5, (16, 1)), np.random.normal(0, 1, (16, 1)),
+          np.random.normal(0, 2, (16, 1)), np.random.normal(0, 3, (16, 1)),
+          np.random.normal(5, .1, (16, 1))]  # Replace with actual initial weights
 }
 
 def your_eval_function(inputs, outputs, final_w):
     # Define how you evaluate the model. For example, calculate and return the error.
     pass
 
+trainX, trainY = initializeData()
 # Example call
-results = ablation_study(your_inputs, your_outputs, param_ranges, your_eval_function)
+results = ablation_study(trainX, trainY, param_ranges)
 
-
+"""
 def main():
-    """
     Main function to run the program.
-    """
-    
     # Initialize N = 500 points
-    trainX, trainY = initializeData()
+    
     final_loss = []
     w_tanh = np.random.normal(0, .1, (16, 1))
-    w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=500)
+    w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=1000)
 
     print(losses_tanh[-5:])
     final_loss.append(losses_tanh[-1])
@@ -354,3 +351,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
