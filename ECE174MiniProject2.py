@@ -8,53 +8,6 @@ Created on Mon Dec  4 14:05:56 2023
 # Import section
 import numpy as np
 import matplotlib.pyplot as plt
-def relu(input_array):
-    """
-    Apply the Rectified Linear Unit (ReLU) function element-wise to the input array.
-
-    Parameters:
-    input_array (ndarray): Input array or scalar to which the ReLU function is applied.
-
-    Returns:
-    ndarray: An array where each element is transformed by the ReLU function.
-    """
-    return np.maximum(0, input_array)
-
-
-def relu_derivative(input_array):
-    """
-    Compute the derivative of the ReLU function element-wise for the input array.
-
-    Parameters:
-    input_array (ndarray): Input array for which the derivative of ReLU is computed.
-
-    Returns:
-    ndarray: An array where each element is the derivative of ReLU for the corresponding element in the input array.
-    """
-    return (input_array > 0).astype(float)
-
-def calc_error_relu(weights, inputs, outputs):
-    """
-    Calculate the error using the ReLU activation function in a simple neural network model.
-
-    Parameters:
-    weights (ndarray): Weight matrix of the neural network.
-    inputs (ndarray): Input feature matrix.
-    outputs (ndarray): Actual output vector.
-
-    Returns:
-    ndarray: The error vector computed as the difference between predicted and actual values.
-    """
-    weights = weights.reshape((16,1))
-    outputs = outputs.reshape((inputs.shape[0],1))
-    inputs = inputs.reshape((inputs.shape[0],3))
-    value = (weights[0] * relu(weights[1]*inputs[:, 0] + weights[2]*inputs[:, 1] + weights[3]*inputs[:, 2] + weights[4]) 
-             + weights[5] * relu(weights[6]*inputs[:, 0] + weights[7]*inputs[:, 1] + weights[8]*inputs[:, 2] + weights[9]) 
-             + weights[10] * relu(weights[11]*inputs[:, 0] + weights[12]*inputs[:, 1] + weights[13]*inputs[:, 2] + weights[14]) 
-             + weights[15])
-    value = value.reshape((inputs.shape[0],1))
-    error_vector = value - outputs
-    return error_vector
 
 def calc_loss(error_vector, weights, lam):
     """
@@ -71,64 +24,6 @@ def calc_loss(error_vector, weights, lam):
     loss = np.sum(error_vector**2) + lam * np.sum(weights**2)
     return loss
 
-def gradient_f_w_relu(weights, input_sample):
-    """
-    Compute the gradient of the network function with respect to weights using ReLU activation.
-
-    Parameters:
-    weights (ndarray): Weight vector.
-    input_sample (ndarray): Single input data point.
-
-    Returns:
-    ndarray: Gradient of the network function with respect to the weights.
-    """
-    weights = weights.flatten()
-
-    # Intermediate values in the neural network
-    z1 = weights[1]*input_sample[0] + weights[2]*input_sample[1] + weights[3]*input_sample[2] + weights[4]
-    a1 = relu(z1)
-    z2 = weights[6]*input_sample[0] + weights[7]*input_sample[1] + weights[8]*input_sample[2] + weights[9]
-    a2 = relu(z2)
-    z3 = weights[11]*input_sample[0] + weights[12]*input_sample[1] + weights[13]*input_sample[2] + weights[14]
-    a3 = relu(z3)
-    # Gradients with respect to each weight
-    gradients = np.array([
-        a1,
-        weights[0] * relu_derivative(z1) * input_sample[0],
-        weights[0] * relu_derivative(z1) * input_sample[1],
-        weights[0] * relu_derivative(z1) * input_sample[2],
-        weights[0] * relu_derivative(z1),
-        a2,
-        weights[5] * relu_derivative(z2) * input_sample[0],
-        weights[5] * relu_derivative(z2) * input_sample[1],
-        weights[5] * relu_derivative(z2) * input_sample[2],
-        weights[5] * relu_derivative(z2),
-        a3,
-        weights[10] * relu_derivative(z3) * input_sample[0],
-        weights[10] * relu_derivative(z3) * input_sample[1],
-        weights[10] * relu_derivative(z3) * input_sample[2],
-        weights[10] * relu_derivative(z3),
-         # Gradient of bias term is 1
-        1.0  
-    ])
-
-    return gradients
-
-def jacobian_relu(weights, inputs):
-    """
-    Compute the Jacobian matrix for a neural network using ReLU activation function.
-
-    Parameters:
-    weights (ndarray): Weight vector of the neural network.
-    inputs (ndarray): Input feature matrix.
-
-    Returns:
-    ndarray: Jacobian matrix.
-    """
-    jac = np.zeros((len(inputs), len(weights)))
-    for i in range(inputs.shape[0]):
-        jac[i] = gradient_f_w_relu(weights, inputs[i])
-    return jac
 
 def calc_error_tanh(weights, inputs, outputs):
     """
@@ -214,40 +109,9 @@ def jacobian_tanh(weights, inputs):
     for i in range(inputs.shape[0]):
         jac[i] = gradient_f_w_tanh(weights, inputs[i])
     return jac
-def levenMarqAlg_ReLU(weights, inputs, outputs, iterations=500):
-    current_weights = weights
-    identity_matrix = np.identity(weights.shape[0])
-    lam = 1e-3 
-    beta = 1.1
-    alpha = 0.9
-    loss_weights = []
-    for i in range(iterations):
-        current_jacobian = jacobian_relu(current_weights, inputs)
-        current_error = calc_error_relu(current_weights, inputs, outputs)
-        weights_update = current_weights - np.linalg.inv(current_jacobian.T @ current_jacobian + identity_matrix * lam) @ current_jacobian.T @ current_error
-        
-        l2_current_error = current_error.T @ current_error
-        next_error = calc_error_relu(weights_update, inputs, outputs)
-        l2_next_error = next_error.T @ next_error
 
-        if np.all(np.abs(weights_update - current_weights) < 1e-13):
-            break
 
-        if l2_next_error < l2_current_error:
-            lam = alpha * lam
-            current_weights = weights_update
-        else:
-            lam = beta * lam
-
-        loss_weights.append(calc_loss(current_error, current_weights, lam))
-
-        if i % 50 == 0:
-            print(i)
-
-    print("final lambda value:", lam)
-    return current_weights, loss_weights
-
-def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e-3, alpha=0.9, beta=1.1):
+def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e1, alpha=0.1, beta=10):
     current_weights = weights
     identity_matrix = np.identity(weights.shape[0])
 
@@ -262,7 +126,7 @@ def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e-3, alpha=0.9, 
         next_error = calc_error_tanh(weights_update, inputs, outputs)
         l2_next_error = next_error.T @ next_error
 
-        if np.all(np.abs(weights_update - current_weights) < 1e-7):
+        if np.all(np.abs(weights_update - current_weights) < 1e-4):
             break
 
         if l2_next_error < l2_current_error:
@@ -270,8 +134,9 @@ def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e-3, alpha=0.9, 
             current_weights = weights_update
         else:
             lam = beta * lam
+        loss.append(calc_loss(current_error, current_weights, lam))
     
-    loss.append(calc_loss(current_error, current_weights, lam))
+    
     return current_weights, loss
 
 
@@ -287,50 +152,153 @@ def initializeData(N=500, Gamma=1):
 
 
 
-def ablation_study(inputs, outputs, param_ranges, iterations=500):
+def ablation_study(inputs, outputs, param_ranges, iterations=50):
     results = {}
-    for lam in param_ranges['lam']:
-        for alpha in param_ranges['alpha']:
-            for beta in param_ranges['beta']:
-                for w_index, w in enumerate(param_ranges['w']):
-                    final_weight, loss = levenMarqAlg(w, inputs, outputs, iterations, lam, alpha, beta)
-                    performance = loss
-                    # Use a simple identifier like w_index instead of the array itself
-                    params = (lam, alpha, beta, w_index)  
-                    results[params] = performance
-                    print("x",end=' ')
-    return results
+    x = 0
+    we = []
+    for seed_number in param_ranges['seed_number']:
+        np.random.seed(seed_number)
+        w = np.random.rand(16,1)
+        we.append(w)
+        for lam in param_ranges['lam']:
+        
+        
+
+            
+            final_weight, loss = levenMarqAlg(w, inputs, outputs, iterations, lam)
+            performance = np.mean(loss)
+            # Use a simple identifier like w_index instead of the array itself
+            params = (lam, seed_number)  
+            results[params] = performance
+            #print(seed_number, end=' ')
+            x+=1
+            
+        print("seed done",seed_number)
+    return results, we
  
-# Example usage
+
 param_ranges = {
     'lam': np.array([1 * (10 ** -i) for i in range(10)]),
-    'alpha': np.array([ 0.1*i for i in range(1,10)]),
-    'beta': np.array([ 1.1+ 0.5*i for i in range(10)]),
-    'w': [np.ones((16,1)), np.zeros((16,1)), np.random.normal(0, .1, (16, 1)), 
-          np.random.normal(0, .05, (16, 1)), np.random.normal(0, .2, (16, 1)),
-          np.random.normal(0, .5, (16, 1)), np.random.normal(0, 1, (16, 1)),
-          np.random.normal(0, 2, (16, 1)), np.random.normal(0, 3, (16, 1)),
-          np.random.normal(5, .1, (16, 1))]  # Replace with actual initial weights
+    'seed_number': np.array([10*i for i in range(11)])
 }
 
-trainX, trainY = initializeData()
-# Example call
-results = ablation_study(trainX, trainY, param_ranges)
 
-"""
-def main():
-    Main function to run the program.
-    # Initialize N = 500 points
+
+import seaborn as sns
+
+def create_heatmap(results, param_ranges):
+    # Adjusting the dimensions of the performance matrix
+    performance_matrix = np.zeros((len(param_ranges['lam']), len(param_ranges['seed_number'])))
+
+    for i, lam in enumerate(param_ranges['lam']):
+        for j, seed_number in enumerate(param_ranges['seed_number']):
+            # Assuming 'beta' is a fixed parameter and not affecting the matrix dimensions
+            key = (lam, seed_number)
+            loss = results.get(key, np.nan)
+
+            # Check if performance is a sequence and take mean if it is
+            if isinstance(loss, (list, np.ndarray)):
+                loss = np.mean(loss)
+
+            performance_matrix[i, j] = loss
+
+    # Creating the heatmap
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(performance_matrix, xticklabels=param_ranges['seed_number'], yticklabels=param_ranges['lam'], annot=True, cmap='viridis')
+    plt.xlabel('Seed Number')
+    plt.ylabel('Lambda')
+    plt.title('Loss Heatmap (darker color indicates lower values)')
+    plt.show()
+
+# Example usage:
+# results = {(1.0, 0): 7.61, (1.0, 10): 6.29, ...}
+# param_range = {'lam': [1.0, 0.1, ...], 'seed_number': [0, 10, ...], 'beta': [0.5]}
+# create_heatmap(results, param_ranges)
+
+
+# Create heatmaps for each w configuration
+
+trainX,trainY = initializeData()
+results,weights = ablation_study(trainX,trainY, param_ranges,iterations = 1000)
+
+print(min(results))
+create_heatmap(results, param_ranges)
+min_key = min(results, key=results.get)
+index_of_key = results.index(min_key)
+print(weights[index_of_key])
+print("Key with the minimum value:", min_key)
+print("Minimum Value:", results[min_key])
+
+#final_loss = []
+#w_tanh = np.ones((16,1))
+#w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=1000)
+
+
+#PLOT LOSS VS Iterations 
+print("loss vs iterations")
+w = weights[index_of_key]
+w_tanh, losses_tanh = levenMarqAlg(weights, trainX, trainY, iterations=1000, lam=1e1, alpha=0.1, beta=10)
+
+# Plotting
+iterations = range(len(losses_tanh))
+testX,testY = initializeData(N=100)
+print(w_tanh)
+print(len(losses_tanh))
+plt.figure(figsize=(12, 6))
+plt.plot(iterations, losses_tanh, marker='o', linestyle='-')
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+plt.title('Loss per Iteration')
+plt.grid(True)
+plt.show()
+
+
+
+#Plot the loss vs different gammas
+loss_vs_gamma = []
+for i in np.array([.2 * i for i in range(1,100,2)]):
     
-    final_loss = []
-    w_tanh = np.random.normal(0, .1, (16, 1))
-    w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=1000)
+    testX,testY = initializeData(N=500,Gamma =i)
+    error = calc_error_tanh(weights, testX,testY)
+    loss_vs_gamma.append(calc_loss(error, weights, 1e-4))
 
-    print(losses_tanh[-5:])
-    final_loss.append(losses_tanh[-1])
+plt.figure(figsize=(12, 6))
+plt.plot(np.array([.2 * i for i in range(1,100,2)]), loss_vs_gamma, marker='o', linestyle='-')
+plt.xlabel('gamma')
+plt.ylabel('loss for test data')
+plt.title('Loss vs Gamma on Test Data')
+plt.grid(True)
+plt.show()
+#for j in np.array([1*10**-i for i in range(10)]):
+    
 
-    print(final_loss)
-
-if __name__ == "__main__":
-    main()
 """
+j = 1e-4
+loss_vs_gamma = []
+w_tanh = np.random.rand(16,1)
+w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=1000, lam = j)
+#print("1")
+print("wee",w_tanh)
+for i in np.array([1 * i for i in range(1,11)]):
+    testX,testY = initializeData(N=500,Gamma =i)
+    error = calc_error_tanh(w_tanh, testX,testY)
+    
+    #print("wee",w_tanh)
+    loss_vs_gamma.append(calc_loss(error, w_tanh, j)/100)
+    #loss_vs_gamma.append(mean_absolute_error(error))
+print(loss_vs_gamma[0])
+plt.figure(figsize=(12, 6))
+plt.plot(np.array([1 * i for i in range(1,11)]), loss_vs_gamma, marker='o', linestyle='-')
+plt.xlabel('gamma')
+plt.ylabel('loss for test data')
+plt.title('Loss vs Gamma on Test Data, Lambda = {}'.format(j))
+plt.grid(True)
+plt.show()
+"""
+print("end")
+   
+    
+    
+    
+    
+    
