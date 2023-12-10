@@ -111,7 +111,7 @@ def jacobian_tanh(weights, inputs):
     return jac
 
 
-def levenMarqAlg(weights, inputs, outputs, iterations=500, lam=1e1, alpha=0.1, beta=10):
+def levenMarqAlg(weights, inputs, outputs, iterations=1000, lam=1e1, alpha=0.1, beta=10):
     current_weights = weights
     identity_matrix = np.identity(weights.shape[0])
 
@@ -160,6 +160,7 @@ def ablation_study(inputs, outputs, param_ranges, iterations=50):
         np.random.seed(seed_number)
         w = np.random.rand(16,1)
         we.append(w)
+        
         for lam in param_ranges['lam']:
         
         
@@ -171,15 +172,14 @@ def ablation_study(inputs, outputs, param_ranges, iterations=50):
             params = (lam, seed_number)  
             results[params] = performance
             #print(seed_number, end=' ')
-            x+=1
             
         print("seed done",seed_number)
     return results, we
  
 
 param_ranges = {
-    'lam': np.array([1 * (10 ** -i) for i in range(10)]),
-    'seed_number': np.array([10*i for i in range(11)])
+    'lam': np.array([1 * (10 ** -i) for i in range(11)]),
+    'seed_number': np.array([10*i for i in range(20)])
 }
 
 
@@ -224,11 +224,18 @@ results,weights = ablation_study(trainX,trainY, param_ranges,iterations = 1000)
 print(min(results))
 create_heatmap(results, param_ranges)
 min_key = min(results, key=results.get)
-index_of_key = results.index(min_key)
-print(weights[index_of_key])
+
+
+w = weights[int(min_key[1]) // 10]
+for i in range(len(weights)):
+    if (weights[i] == w).all():
+        print("we do get the same thing for w")
+
 print("Key with the minimum value:", min_key)
 print("Minimum Value:", results[min_key])
-
+for i in range(len(weights)):
+    weights[i] = np.mean(weights[i])
+print("average value for all of the weight initialization:", weights)
 #final_loss = []
 #w_tanh = np.ones((16,1))
 #w_tanh, losses_tanh = levenMarqAlg(w_tanh, trainX, trainY, iterations=1000)
@@ -236,8 +243,8 @@ print("Minimum Value:", results[min_key])
 
 #PLOT LOSS VS Iterations 
 print("loss vs iterations")
-w = weights[index_of_key]
-w_tanh, losses_tanh = levenMarqAlg(weights, trainX, trainY, iterations=1000, lam=1e1, alpha=0.1, beta=10)
+
+w_tanh, losses_tanh = levenMarqAlg(w, trainX, trainY, iterations=1000, lam=1e1, alpha=0.1, beta=10)
 
 # Plotting
 iterations = range(len(losses_tanh))
@@ -256,11 +263,12 @@ plt.show()
 
 #Plot the loss vs different gammas
 loss_vs_gamma = []
+
 for i in np.array([.2 * i for i in range(1,100,2)]):
     
     testX,testY = initializeData(N=500,Gamma =i)
-    error = calc_error_tanh(weights, testX,testY)
-    loss_vs_gamma.append(calc_loss(error, weights, 1e-4))
+    error = calc_error_tanh(w_tanh, testX,testY)
+    loss_vs_gamma.append(calc_loss(error, w, float(min_key[0])))
 
 plt.figure(figsize=(12, 6))
 plt.plot(np.array([.2 * i for i in range(1,100,2)]), loss_vs_gamma, marker='o', linestyle='-')
